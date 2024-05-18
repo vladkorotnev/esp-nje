@@ -1,5 +1,6 @@
 #include "network/admin_panel.h"
 #include <service/prefs.h>
+#include <service/weather.h>
 #include <GyverPortal.h>
 #include <Arduino.h>
 
@@ -85,6 +86,22 @@ void build() {
         GP.LABEL("E.g. JST-9 or AST4ADT,M3.2.0,M11.1.0. See <a href=\"https://www.iana.org/time-zones\">IANA TZ DB</a> for reference.");
     GP.SPOILER_END();
     GP.BREAK();
+
+    GP.SPOILER_BEGIN("OpenWeatherMap", GP_BLUE);
+        render_string("Latitude", PREFS_KEY_WEATHER_LAT);
+        render_string("Longitude", PREFS_KEY_WEATHER_LON);
+        render_string("API Key", PREFS_KEY_WEATHER_APIKEY, true);
+        render_int("Update interval [m]:", PREFS_KEY_WEATHER_INTERVAL_MINUTES);
+
+        current_weather_t weather;
+        if(weather_get_current(&weather)) {
+            GP.HR();
+            GP.LABEL("Current weather:");
+            GP.LABEL(String(kelvin_to(weather.temperature_kelvin, CELSIUS)) + " C");
+            GP.LABEL(String(weather.humidity_percent) + " %");
+            GP.LABEL(String(weather.pressure_hpa) + "hPa");
+        }
+    GP.SPOILER_END();
 
     GP.HR();
 

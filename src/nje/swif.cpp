@@ -14,11 +14,19 @@ void Nje105::set_message(nje_msg_kind_t kind, uint8_t num, nje_msg_attrib_t attr
     mk_datetime(datetime, 9);
     char buffer[128];
     snprintf(buffer, 128, "]011%s%02d%s%c%c%s", 
-        kind == MSG_NORMAL ? "A110" : (kind == MSG_EMERGENCY ? "F120" : "B111"),
+        kind == MSG_NORMAL ? "A110" : (kind == MSG_EMERGENCY ? "B111" : "F120"),
         num,
         datetime,
         attr.color, attr.decor,
         text);
+    port->send_utf_string(buffer);
+}
+
+void Nje105::delete_message(nje_msg_kind_t kind, uint8_t num) {
+    char buffer[128];
+    snprintf(buffer, 128, "]011%s%02d", 
+        kind == MSG_NORMAL ? "A210" : (kind == MSG_EMERGENCY ? "B211" : "F220"),
+        num);
     port->send_utf_string(buffer);
 }
 

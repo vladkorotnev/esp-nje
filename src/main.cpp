@@ -4,6 +4,7 @@
 #include <network/otafvu.h>
 #include <service/time.h>
 #include <service/prefs.h>
+#include <service/weather.h>
 #include <network/admin_panel.h>
 #include <utils.h>
 #include <state.h>
@@ -54,15 +55,14 @@ void setup() {
 
     timekeeping_begin();
     admin_panel_prepare();
-   foo_client_begin();
+    foo_client_begin();
+    weather_start();
 
     vTaskPrioritySet(NULL, configMAX_PRIORITIES - 1);
 
     NjeHwIf * hw = new NjeHwIf(NJE_TX_PIN, NJE_PORT);
 
-    // hw->send_utf_string("]011A1100101010101AAEsp32Hello");
-    
-   sw = new Nje105(hw);
+    sw = new Nje105(hw);
     sw->set_message(MSG_NORMAL, 1, { .color = COLOR_RED, .decor = SCROLL_BLINK }, "fucks sake");
 
     change_state(startup_state);
@@ -70,18 +70,52 @@ void setup() {
 
 
 TickType_t last_foo = 0;
+current_weather_t last_weather = { 0 };
 
 void processing() {
     switch(current_state) {
         case STATE_IDLE:
         {
-            if(last_foo != foo_last_recv() && foo_is_playing()) {
+            if(last_foo != foo_last_recv()) {
                 ESP_LOGI(LOG_TAG, "New foo");
                 last_foo = foo_last_recv();
+                if(foo_is_playing()) {
+                    char buffer[128] = {0};
+                    char artist[64] = {0};
+                    char track[64] = {0};
+                    foo_get_artist(artist, 64);
+                    foo_get_title(track, 64);
+                    nje_msg_attrib_t track_attr = { COLOR_GREEN, SCROLL };
+                    snprintf(buffer, 128, "%s -~%c%c~ %s", artist, track_attr.color, track_attr.decor, track);
+                    ESP_LOGI(LOG_TAG, "New track: %s", buffer);
+                    sw->set_message(MSG_NORMAL, 1, { COLOR_RED, SCROLL }, buffer);
+                } else {
+                    sw->delete_message(MSG_NORMAL, 1);
+                }
+            }
+
+            current_weather_t w;
+            if(weather_get_current(&w) && w.last_updated != last_weather.last_updated) {
+                last_weather = w;
                 char buffer[128] = {0};
-                foo_get_text(buffer, 128);
-                ESP_LOGI(LOG_TAG, "New track: %s", buffer);
-                sw->set_message(MSG_NORMAL, 1, { .color = COLOR_RED, .decor = SCROLL }, buffer);
+
+                nje_msg_attrib_t sub_attr = { COLOR_RED, SCROLL };
+                nje_msg_attrib_t main_attr = { COLOR_GREEN, SCROLL };
+
+                snprintf(buffer, 128, 
+                "%s, ~%c%c~%.01f\370C. ~%c%c~Wind ~%c%c~%.01f~%c%c~ m/s. Pressure ~%c%c~%i~%c%c~ hPa.", 
+                    w.description, 
+                    main_attr.color, main_attr.decor,
+                    kelvin_to(w.temperature_kelvin, CELSIUS),
+                    sub_attr.color, sub_attr.decor,
+                    main_attr.color, main_attr.decor,
+                    w.windspeed_mps,
+                    sub_attr.color, sub_attr.decor,
+                    main_attr.color, main_attr.decor,
+                    w.pressure_hpa,
+                    sub_attr.color, sub_attr.decor
+                    );
+                sw->set_message(MSG_NORMAL, 2, sub_attr, buffer);
             }
         }
             break;

@@ -20,7 +20,8 @@ static struct hostent * server;
 static TaskHandle_t hTask;
 static char recv_buf[RECV_BUF_SIZE];
 
-static char text_buf[TEXT_BUF_SIZE];
+static char title_buf[TEXT_BUF_SIZE];
+static char artist_buf[TEXT_BUF_SIZE];
 static bool play_sts = false;
 static SemaphoreHandle_t sts_semaphore;
 static TickType_t last_recv = 0;
@@ -38,13 +39,24 @@ bool foo_is_playing() {
     return sts;
 }
 
-void foo_get_text(char * buf, size_t buf_size) {
+void foo_get_title(char * buf, size_t buf_size) {
     if(!xSemaphoreTake(sts_semaphore, pdMS_TO_TICKS(1000))) {
         ESP_LOGE(LOG_TAG, "Semaphore timed out");
         return;
     }
 
-    strncpy(buf, text_buf, buf_size);
+    strncpy(buf, title_buf, buf_size);
+
+    xSemaphoreGive(sts_semaphore);
+}
+
+void foo_get_artist(char * buf, size_t buf_size) {
+    if(!xSemaphoreTake(sts_semaphore, pdMS_TO_TICKS(1000))) {
+        ESP_LOGE(LOG_TAG, "Semaphore timed out");
+        return;
+    }
+
+    strncpy(buf, artist_buf, buf_size);
 
     xSemaphoreGive(sts_semaphore);
 }
@@ -71,7 +83,7 @@ void enable_keepalive(int sock) {
 
 char * parse_field(char ** current) {
     char * old_current = *current;
-    char * next = strchr(old_current, '|');
+    char * next = strchr(old_current, FOO_SEPARATOR);
     if(next == nullptr) {
         ESP_LOGE(LOG_TAG, "Parse error: no next field");
         return nullptr;
@@ -99,6 +111,9 @@ void parse_line(char * line) {
     dummy = parse_field(&current);
     dummy = parse_field(&current);
 
+    char * artist = parse_field(&current);
+    strncpy(artist_buf, artist, TEXT_BUF_SIZE);
+
     // Cannot use parse_field here in case the track name might contain the separator character
     char * txt = current;
     size_t txt_len = strlen(txt);
@@ -110,8 +125,8 @@ void parse_line(char * line) {
     }
 
     play_sts = (type == 111);
-    strncpy(text_buf, txt, TEXT_BUF_SIZE);
-    ESP_LOGI(LOG_TAG, "Track: %s, Play_sts: %i", text_buf, play_sts);
+    strncpy(title_buf, txt, TEXT_BUF_SIZE);
+    ESP_LOGI(LOG_TAG, "Track: %s, Artist: %s, Play_sts: %i", title_buf, artist_buf, play_sts);
     last_recv = xTaskGetTickCount();
 
     xSemaphoreGive(sts_semaphore);
@@ -138,7 +153,7 @@ void foo_task(void * pvParameters) {
     int r = 0;
 
     memset(recv_buf, 0, RECV_BUF_SIZE);
-    memset(text_buf, 0, TEXT_BUF_SIZE);
+    memset(title_buf, 0, TEXT_BUF_SIZE);
 
     server = gethostbyname("192.168.1.106");
     if (server == NULL) {
