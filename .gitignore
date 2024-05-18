@@ -1,0 +1,4 @@
+.pio
+captures/
+.vscode/c_cpp_properties.json
+.env
