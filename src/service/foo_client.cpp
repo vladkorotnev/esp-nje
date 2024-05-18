@@ -104,8 +104,6 @@ void parse_line(char * line) {
     size_t txt_len = strlen(txt);
     txt[txt_len - 1] = 0;
 
-    ESP_LOGI(LOG_TAG, "Track: %s", txt);
-
     if(!xSemaphoreTake(sts_semaphore, pdMS_TO_TICKS(1000))) {
         ESP_LOGE(LOG_TAG, "Semaphore timed out");
         return;
@@ -113,6 +111,8 @@ void parse_line(char * line) {
 
     play_sts = (type == 111);
     strncpy(text_buf, txt, TEXT_BUF_SIZE);
+    ESP_LOGI(LOG_TAG, "Track: %s, Play_sts: %i", text_buf, play_sts);
+    last_recv = xTaskGetTickCount();
 
     xSemaphoreGive(sts_semaphore);
 }

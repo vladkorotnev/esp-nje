@@ -8,6 +8,8 @@
 #include <utils.h>
 #include <state.h>
 #include <service/foo_client.h>
+#include <nje/hwif.h>
+#include <nje/swif.h>
 
 static char LOG_TAG[] = "APL_MAIN";
 
@@ -33,6 +35,8 @@ void change_state(device_state_t to) {
     current_state = to;
 }
 
+Nje105 * sw;
+
 void setup() {
     // Set up serial for logs
     Serial.begin(115200);
@@ -50,17 +54,36 @@ void setup() {
 
     timekeeping_begin();
     admin_panel_prepare();
-    foo_client_begin();
+   foo_client_begin();
 
     vTaskPrioritySet(NULL, configMAX_PRIORITIES - 1);
+
+    NjeHwIf * hw = new NjeHwIf(NJE_TX_PIN, NJE_PORT);
+
+    // hw->send_utf_string("]011A1100101010101AAEsp32Hello");
+    
+   sw = new Nje105(hw);
+    sw->set_message(MSG_NORMAL, 1, { .color = COLOR_RED, .decor = SCROLL_BLINK }, "fucks sake");
 
     change_state(startup_state);
 }
 
 
+TickType_t last_foo = 0;
+
 void processing() {
     switch(current_state) {
         case STATE_IDLE:
+        {
+            if(last_foo != foo_last_recv() && foo_is_playing()) {
+                ESP_LOGI(LOG_TAG, "New foo");
+                last_foo = foo_last_recv();
+                char buffer[128] = {0};
+                foo_get_text(buffer, 128);
+                ESP_LOGI(LOG_TAG, "New track: %s", buffer);
+                sw->set_message(MSG_NORMAL, 1, { .color = COLOR_RED, .decor = SCROLL }, buffer);
+            }
+        }
             break;
 
         case STATE_OTAFVU:
