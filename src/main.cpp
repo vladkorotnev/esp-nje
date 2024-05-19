@@ -5,6 +5,7 @@
 #include <service/time.h>
 #include <service/prefs.h>
 #include <service/weather.h>
+#include <service/sercon.h>
 #include <network/admin_panel.h>
 #include <utils.h>
 #include <state.h>
@@ -37,15 +38,18 @@ void change_state(device_state_t to) {
 }
 
 Nje105 * sw;
+NjeHwIf * hw;
+
+void sercon_line_callback(const char * line) {
+    hw->send_utf_string(line);
+}
 
 void setup() {
-    // Set up serial for logs
-    Serial.begin(115200);
-
     ESP_LOGI(LOG_TAG, "WiFi init");
     NetworkManager::startup();
     while(!NetworkManager::is_up()) {
         delay(1000);
+        ESP_LOGV(LOG_TAG, "Still waiting...");
     }
 
     ESP_LOGI(LOG_TAG, "Network: %s", NetworkManager::network_name());
@@ -60,10 +64,11 @@ void setup() {
 
     vTaskPrioritySet(NULL, configMAX_PRIORITIES - 1);
 
-    NjeHwIf * hw = new NjeHwIf(NJE_TX_PIN, NJE_PORT);
-
+    hw = new NjeHwIf(NJE_TX_PIN, NJE_PORT);
     sw = new Nje105(hw);
-    sw->set_message(MSG_NORMAL, 1, { .color = COLOR_RED, .decor = SCROLL_BLINK }, "fucks sake");
+
+    serial_begin(SERCON_PORT);
+    serial_set_line_callback(sercon_line_callback);
 
     change_state(startup_state);
 }
