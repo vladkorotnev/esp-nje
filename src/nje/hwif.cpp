@@ -57,7 +57,7 @@ void NjeHwIf::send_pkt(const char * packet, size_t len) {
 void NjeHwIf::send_utf_string(const char * utf) {
     ESP_LOGV(LOG_TAG, "UTF write: %s", utf);
 
-    uint8_t dest_str[128] = { 0 };
+    uint8_t dest_str[129] = { 0 };
     uint16_t out_size = 0;
 
     u8ts.UTF8_to_SJIS_str_cnv(UTF8SJIS_file, utf, dest_str, &out_size);

@@ -104,6 +104,13 @@ void build() {
     GP.SPOILER_END();
 
     GP.HR();
+    
+    GP.SPOILER_BEGIN("Wordnik", GP_BLUE);
+        render_string("API Key", PREFS_KEY_WORDNIK_APIKEY, true);
+        render_int("Update interval [m]:", PREFS_KEY_WORDNIK_INTERVAL_MINUTES);
+    GP.SPOILER_END();
+
+    GP.HR();
 
     GP.BUTTON(reboot_btn);
     GP.BUILD_END();
@@ -116,6 +123,14 @@ void action() {
         save_string(PREFS_KEY_TIMESERVER);
         save_string(PREFS_KEY_TIMEZONE);
         save_int(PREFS_KEY_TIME_SYNC_INTERVAL_SEC, 600, 21600);
+
+        save_string(PREFS_KEY_WEATHER_LAT);
+        save_string(PREFS_KEY_WEATHER_LON);
+        save_string(PREFS_KEY_WEATHER_APIKEY);
+        save_int(PREFS_KEY_WEATHER_INTERVAL_MINUTES, 10, 3600);
+
+        save_string(PREFS_KEY_WORDNIK_APIKEY);
+        save_int(PREFS_KEY_WORDNIK_INTERVAL_MINUTES, 60, 3600);
 
         if(ui.click(reboot_btn)) {
             prefs_force_save();

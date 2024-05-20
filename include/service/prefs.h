@@ -15,6 +15,9 @@ static constexpr prefs_key_t PREFS_KEY_WEATHER_LON = "w_lon";
 static constexpr prefs_key_t PREFS_KEY_WEATHER_APIKEY = "w_apikey";
 static constexpr prefs_key_t PREFS_KEY_WEATHER_INTERVAL_MINUTES = "w_interval_m";
 
+static constexpr prefs_key_t PREFS_KEY_WORDNIK_APIKEY = "wd_apikey";
+static constexpr prefs_key_t PREFS_KEY_WORDNIK_INTERVAL_MINUTES = "wd_interval_m";
+
 void prefs_force_save();
 
 String prefs_get_string(prefs_key_t, String def = String());

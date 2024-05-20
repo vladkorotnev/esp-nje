@@ -1,7 +1,7 @@
 #pragma once
 #include <WString.h>
 
-typedef enum nje_msg_kind {
+typedef enum nje_msg_kind : uint8_t {
     MSG_NORMAL,
     MSG_EMERGENCY,
     MSG_COMMERCIAL
@@ -36,3 +36,18 @@ typedef struct __attribute__((packed))  nje_msg_attrib {
     nje_msg_color_t color;
     nje_msg_decor_t decor;
 } nje_msg_attrib_t;
+
+typedef int8_t nje_msg_num_t;
+const nje_msg_num_t NJE_MIN_MSG_NUM = 1;
+const nje_msg_num_t NJE_MAX_MSG_NUM = 100;
+const nje_msg_num_t NJE_MSG_COUNT = NJE_MAX_MSG_NUM - NJE_MIN_MSG_NUM;
+
+typedef struct __attribute__((packed)) nje_msg_identifier {
+    nje_msg_kind_t kind;
+    nje_msg_num_t number;
+} nje_msg_identifier_t;
+
+typedef struct nje_msg {
+    nje_msg_attrib_t attributes;
+    const char * content;
+} nje_msg_t;

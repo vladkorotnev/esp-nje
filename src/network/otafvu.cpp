@@ -1,6 +1,7 @@
 #include <network/otafvu.h>
 #include <state.h>
 #include <utils.h>
+#include <nje/swif.h>
 
 static char LOG_TAG[] = "OTAFVU";
 
