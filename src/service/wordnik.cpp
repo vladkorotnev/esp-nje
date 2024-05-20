@@ -67,6 +67,9 @@ void WordnikTaskFunction( void * pvParameter )
                     String d = response["definitions"][0]["text"].as<String>();
 
                     strncpy(wordCache, w.c_str(), sizeof(wordCache));
+                    if(wordCache[0] >= 'a') {
+                        wordCache[0] -= ('a' - 'A');
+                    }
                     strncpy(definitionCache, d.c_str(), sizeof(definitionCache));
                     definitionCache[sizeof(definitionCache) - 1] = 0;
 

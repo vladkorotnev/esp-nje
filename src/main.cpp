@@ -17,6 +17,7 @@
 #include <views/view_foo.h>
 #include <views/view_weather.h>
 #include <views/view_wotd.h>
+#include <views/view_time.h>
 
 static char LOG_TAG[] = "APL_MAIN";
 
@@ -48,6 +49,7 @@ MessageManager * mgr;
 FooView * fooView;
 WeatherView * weatherView;
 WotdView * wotdView;
+TimeView * timeView;
 
 void sercon_line_callback(const char * line) {
     hw->send_utf_string(line);
@@ -65,7 +67,6 @@ void setup() {
     ESP_LOGI(LOG_TAG, "IP: %s", NetworkManager::current_ip().c_str());
     ota = new OTAFVUManager();
 
-
     timekeeping_begin();
     admin_panel_prepare();
     foo_client_begin();
@@ -76,11 +77,16 @@ void setup() {
 
     hw = new NjeHwIf(NJE_TX_PIN, NJE_PORT);
     sw = new Nje105(hw);
+
+    sw->set_power_mode(ENERGY_SAVING);
+    sw->set_on_hours(9, 21);
+
     mgr = new MessageManager(sw);
 
     fooView = new FooView(mgr);
     weatherView = new WeatherView(mgr);
     wotdView = new WotdView(mgr);
+    timeView = new TimeView(mgr);
 
     serial_begin(SERCON_PORT);
     serial_set_line_callback(sercon_line_callback);
@@ -92,6 +98,7 @@ void setup() {
 void processing() {
     switch(current_state) {
         case STATE_IDLE:
+            timeView->update();
             fooView->update();
             weatherView->update();
             wotdView->update();

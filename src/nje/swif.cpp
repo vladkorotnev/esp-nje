@@ -35,3 +35,17 @@ void Nje105::mk_datetime(char * buffer, size_t len) {
     struct tm * tm_info = localtime(&t);
     strftime(buffer, len, "%m%d%H%M", tm_info);
 }
+
+void Nje105::set_power_mode(nje_power_mode_t mode) {
+    char buffer[16];
+    snprintf(buffer, 16, "NJES02%02d", mode);
+    port->send_utf_string(buffer);
+}
+
+void Nje105::set_on_hours(uint8_t start, uint8_t stop) {
+    char buffer[16];
+    snprintf(buffer, 16, "NJES03%02d", start);
+    port->send_utf_string(buffer);
+    snprintf(buffer, 16, "NJES04%02d", stop);
+    port->send_utf_string(buffer);
+}
