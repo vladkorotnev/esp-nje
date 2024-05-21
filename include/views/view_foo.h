@@ -26,7 +26,7 @@ public:
                 foo_get_artist(artist, 64);
                 foo_get_title(track, 64);
                 nje_msg_attrib_t track_attr = { COLOR_GREEN, SCROLL };
-                snprintf(buffer, 128, "%s -~%c%c~ %s", artist, track_attr.color, track_attr.decor, track);
+                snprintf(buffer, 128, "♪ %s -~%c%c~ %s ♪", artist, track_attr.color, track_attr.decor, track);
                 ESP_LOGI(LOG_TAG, "New track: %s", buffer);
                 mgr->update(mid, { .attributes = { COLOR_RED, SCROLL }, .content = buffer });
             } else {

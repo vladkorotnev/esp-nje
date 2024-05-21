@@ -42,15 +42,13 @@ void NjeHwIf::send_pkt(const char * packet, size_t len) {
         ESP_LOGE(LOG_TAG, "%i is too long!", len);
     }
 
-    uart_write_bytes(_serial, "\r\n", 2);
-
     char buffer[9] = { 0 };
     mk_datetime(buffer, 9);
     ESP_LOGV(LOG_TAG, "Time: %s", buffer);
+
+    uart_write_bytes(_serial, "\r\n", 2);
     uart_write_bytes(_serial, buffer, 8);
-
     uart_write_bytes(_serial, packet, len);
-
     uart_write_bytes(_serial, "\r\n", 2);
 }
 
