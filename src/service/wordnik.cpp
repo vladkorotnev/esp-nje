@@ -22,7 +22,7 @@ TickType_t wotd_get_last_update() {
     return lastUpdate;
 }
 
-bool wotd_get_current(char * w, char * d) {
+bool wotd_get_current(char * w, size_t wsz, char * d, size_t dsz) {
     if(w == nullptr || d == nullptr) return false;
 
     if(!xSemaphoreTake(cacheSemaphore, portMAX_DELAY)) {
@@ -30,8 +30,8 @@ bool wotd_get_current(char * w, char * d) {
         return false;
     }
 
-    strcpy(w, wordCache);
-    strcpy(d, definitionCache);
+    strncpy(w, wordCache, wsz-1);
+    strncpy(d, definitionCache, dsz-1);
 
     xSemaphoreGive(cacheSemaphore);
     return true;

@@ -18,6 +18,13 @@ static constexpr prefs_key_t PREFS_KEY_WEATHER_INTERVAL_MINUTES = "w_interval_m"
 static constexpr prefs_key_t PREFS_KEY_WORDNIK_APIKEY = "wd_apikey";
 static constexpr prefs_key_t PREFS_KEY_WORDNIK_INTERVAL_MINUTES = "wd_interval_m";
 
+static constexpr prefs_key_t PREFS_KEY_NJE_WORK_MODE = "nje_wmode";
+
+static constexpr prefs_key_t PREFS_KEY_FOOBAR_SERVER = "foo_svr";
+static constexpr prefs_key_t PREFS_KEY_FOOBAR_PORT = "foo_prt";
+
+static constexpr prefs_key_t PREFS_KEY_GMAIL_ACCOUNTS = "gmail_acc";
+
 void prefs_force_save();
 
 String prefs_get_string(prefs_key_t, String def = String());

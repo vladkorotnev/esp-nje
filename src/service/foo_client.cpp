@@ -1,4 +1,5 @@
 #include <service/foo_client.h>
+#include <service/prefs.h>
 #include <freertos/FreeRTOS.h>
 #include <esp32-hal-log.h>
 #include <sys/socket.h>
@@ -10,7 +11,9 @@ static char LOG_TAG[] = "FOO";
 
 #define RECV_BUF_SIZE 1024
 #define TEXT_BUF_SIZE 256
-#define PORT 3333
+
+static char server_address[64] = { 0 };
+static int server_port = 3333;
 
 static int sockfd;
 static bool running = true;
@@ -155,7 +158,7 @@ void foo_task(void * pvParameters) {
     memset(recv_buf, 0, RECV_BUF_SIZE);
     memset(title_buf, 0, TEXT_BUF_SIZE);
 
-    server = gethostbyname("192.168.1.106");
+    server = gethostbyname(server_address);
     if (server == NULL) {
         ESP_LOGE(LOG_TAG, "ERROR, no such host");
     }
@@ -165,7 +168,7 @@ void foo_task(void * pvParameters) {
 
     memcpy((char *)&serv_addr.sin_addr.s_addr, (char *)server->h_addr,
            server->h_length);
-    serv_addr.sin_port = htons(PORT);
+    serv_addr.sin_port = htons(server_port);
 
     while(running) {
         if(sockfd > 0) {
@@ -177,7 +180,7 @@ void foo_task(void * pvParameters) {
             ESP_LOGE(LOG_TAG, "ERROR opening socket");
             return;
         }
-        ESP_LOGI(LOG_TAG, "sockfd = %i", sockfd);
+        ESP_LOGI(LOG_TAG, "Connect to %s:%i, sockfd = %i", server_address, server_port, sockfd);
 
         if(r = connect(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
             ESP_LOGI(LOG_TAG, "Error (%i, errno = %i) connecting, retry in 5s...", r, errno);
@@ -207,6 +210,14 @@ void foo_task(void * pvParameters) {
 void foo_client_begin() {
     sts_semaphore = xSemaphoreCreateBinary();
     xSemaphoreGive(sts_semaphore);
+
+    String srvaddr = prefs_get_string(PREFS_KEY_FOOBAR_SERVER, "0.0.0.0");
+    strncpy(server_address, srvaddr.c_str(), 63);
+
+    int port = prefs_get_int(PREFS_KEY_FOOBAR_PORT);
+    if(port != 0) {
+        server_port = port;
+    }
 
     if(xTaskCreate(
         foo_task,

@@ -2,9 +2,9 @@
 
 // The only existing library pulls in too much code for this task
 // (an IMAP client that manages my WiFi and Flash? no thank you very much)
-// So roll my own...
+// So roll my own... with a lot of shit code
 
-#include <map>
+#include <set>
 #include <vector>
 #include <mbedtls/ssl.h>
 #include <mbedtls/net_sockets.h>
@@ -42,6 +42,7 @@ public:
 
 private:
     std::vector<imap_message_id_t> download_queue = {};
+    std::set<imap_message_id_t> known_ids = {};
     bool did_just_expunge;
 
     imap_notify_callback_t callback = nullptr;

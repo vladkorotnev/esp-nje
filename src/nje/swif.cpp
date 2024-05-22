@@ -1,6 +1,9 @@
 #include <nje/swif.h>
 #include <time.h>
 
+// Commands taken from:
+// https://web.archive.org/web/20070705065638/http://www.hydra.cx/msgbd_code.html
+
 Nje105::Nje105(NjeHwIf *iface) {
     port = iface;
 }
@@ -42,10 +45,33 @@ void Nje105::set_power_mode(nje_power_mode_t mode) {
     port->send_utf_string(buffer);
 }
 
-void Nje105::set_on_hours(uint8_t start, uint8_t stop) {
+void Nje105::set_on_hour(uint8_t start) {
     char buffer[16];
     snprintf(buffer, 16, "NJES03%02d", start);
     port->send_utf_string(buffer);
+}
+
+void Nje105::set_off_hour(uint8_t stop) {
+    char buffer[16];
     snprintf(buffer, 16, "NJES04%02d", stop);
+    port->send_utf_string(buffer);
+}
+
+void Nje105::set_scroll_speed(nje_scroll_speed_t v) {
+    char buffer[16];
+    snprintf(buffer, 16, "NJES06%02d", v);
+    port->send_utf_string(buffer);
+}
+
+void Nje105::set_blink_speed(nje_blink_speed_t v) {
+    char buffer[16];
+    snprintf(buffer, 16, "NJES07%02d", v);
+    port->send_utf_string(buffer);
+}
+
+void Nje105::set_pause_time(uint8_t v) {
+    if(v > 10) v = 10;
+    char buffer[16];
+    snprintf(buffer, 16, "NJES08%02d", v);
     port->send_utf_string(buffer);
 }

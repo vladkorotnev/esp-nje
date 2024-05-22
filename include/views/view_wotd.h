@@ -19,12 +19,9 @@ public:
         TickType_t u = wotd_get_last_update();
         if(last_update != u) {
             last_update = u;
-            char word[64];
-            char def[128];
-            if(wotd_get_current(word, def)) {
-                def[sizeof(def) - 1] = 0;
-                word[sizeof(word) - 1] = 0;
-
+            char word[64] = {0};
+            char def[128] = {0};
+            if(wotd_get_current(word, 64, def, 128)) {
                 char buffer[128] = {0};
                 nje_msg_attrib_t track_attr = { COLOR_RED, SCROLL };
                 snprintf(buffer, 128, "%s~%c%c~: %s", word, track_attr.color, track_attr.decor, def);

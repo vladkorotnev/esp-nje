@@ -5,6 +5,9 @@
 #include <SPIFFS.h>
 #include <service/imap/rfc2047.h>
 
+// This is all a bunch of shitcode and probably will crash on any possible occasion
+// However it seems to work well enough for simple email notifications 
+
 static char LOG_TAG[] = "IMAP_NFY";
 
 #define TXN_TAG "A001 "
@@ -117,6 +120,13 @@ void ImapNotifier::manual_check() {
         return;
     }
 
+    for(auto id = known_ids.begin(); id != known_ids.end(); ++id)  {
+        if(callback != nullptr) {
+            callback(*id, nullptr);
+        }
+    }
+    known_ids.clear();
+
     send("SEARCH UNSEEN");
     state = CHECKING;
 }
@@ -159,7 +169,7 @@ void ImapNotifier::download_one(imap_message_id_t id) {
 	char *epos;
 	int eslen;
 
-    ESP_LOGV(LOG_TAG, "buffer: %s", ptr);
+    //ESP_LOGV(LOG_TAG, "buffer: %s", ptr);
 
     imap_message_info_t msg = { 0 };
     char name[64] = { 0 };
@@ -170,19 +180,30 @@ void ImapNotifier::download_one(imap_message_id_t id) {
 	// Parse From
 	if ((spos = strstr((char *)ptr, "\r\nFrom:")) != 0) {
         spos += 8; // "\r\nFrom: "
+        epos = strstr(spos, "\r\n");
 
         char * email_start = strstr(spos, "<") + 1;
-        char * email_end = strstr(email_start, ">");
-        *email_end = 0;
-        strncpy(mail, email_start, 64);
-        *email_end = '>';
+        if(email_start < epos) {
+            char * email_end = strstr(email_start, ">");
+            *email_end = 0;
+            strncpy(mail, email_start, 64);
+            *email_end = '>';
 
-        char * name_start = spos;
-        char * name_end = email_start - 2;
-        char bak = *name_end;
-        *name_end = 0;
-        strncpy(name, name_start, 64);
-        *name_end = bak;
+            char * name_start = spos;
+            char * name_end = email_start - 2;
+            char bak = *name_end;
+            *name_end = 0;
+            strncpy(name, name_start, 64);
+            *name_end = bak;
+        } else {
+            // no name, just email
+            char * name_start = spos;
+            char * name_end = strstr(name_start, "\r\n");
+            char bak = *name_end;
+            *name_end = 0;
+            strncpy(name, name_start, 64);
+            *name_end = bak;
+        }
 
         rfc2047_decode(name_decoded, name, 64);
 
@@ -195,6 +216,12 @@ void ImapNotifier::download_one(imap_message_id_t id) {
 	if ((spos = strstr((char *)ptr, "\r\nSubject:")) != 0) {
         spos += 11; // "\r\nSubject: "
 		epos = strstr(spos, "\r\n");
+        while(*(epos + 2) == ' ') {
+            // Concat multi line subjects
+            epos[0] = ' ';
+            epos[1] = ' ';
+            epos = strstr(epos, "\r\n");
+        }
         *epos = 0;
 
         rfc2047_decode(subj_decoded, spos, 64);
@@ -206,6 +233,8 @@ void ImapNotifier::download_one(imap_message_id_t id) {
     if(callback != nullptr) {
         callback(id, &msg);
     }
+
+    known_ids.insert(id);
 
 	free(ptr);
 }
@@ -321,10 +350,19 @@ void ImapNotifier::process_line(const char * line) {
                 id_str[len] = 0;
 
                 imap_message_id_t id = atoi(id_str);
+
+                if(known_ids.count(id) == 0) {
+                    ESP_LOGW(LOG_TAG, "Tried to yeet msg %i but it's not something we know? Something is not right, we need to redownload messages.", id);
+                    mbedtls_ssl_write(&ssl, (const unsigned char*)"DONE\r\n", 6);
+                    manual_check();
+                    return;
+                }
+
                 ESP_LOGI(LOG_TAG, "Yeet msg %i", id);
                 if(callback != nullptr) {
                     callback(id, nullptr);
                 }
+                known_ids.erase(id);
 
                 if(expunge) {
                     did_just_expunge = true;
