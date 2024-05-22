@@ -70,6 +70,7 @@ private:
     void connect();
     void login();
     void deinit();
+    void free_socket();
     void manual_check();
     void download_queued();
     void download_one(imap_message_id_t);

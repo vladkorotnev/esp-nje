@@ -104,7 +104,7 @@ void wotd_start() {
     if(xTaskCreate(
         WordnikTaskFunction,
         "WOTD",
-        4096,
+        8000,
         nullptr,
         8,
         &hTask

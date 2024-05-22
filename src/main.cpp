@@ -76,7 +76,7 @@ void mail_cb(imap_message_id_t id, const imap_message_info_t * info) {
         snprintf(buf, 127, "%s ~%c%c~%s", 
             (info->sender_name[0] == '?') ? info->sender_mail : info->sender_name,
             COLOR_RED, SCROLL,
-            (info->subject == nullptr || info->subject[0] == '?') ? "(new mail)" : info->subject);
+            (info->subject == nullptr || info->subject[0] == '?') ? "(新着メール)" : info->subject);
         mgr->update(mid, { .attributes = { COLOR_GREEN, SCROLL }, .content = buf });
         mail_map[id] = mid;
     } else if (mid.number != 0) {
@@ -98,7 +98,6 @@ void setup() {
     NetworkManager::startup();
     while(!NetworkManager::is_up()) {
         delay(1000);
-        ESP_LOGV(LOG_TAG, "Still waiting...");
     }
 
     ESP_LOGI(LOG_TAG, "Network: %s", NetworkManager::network_name());

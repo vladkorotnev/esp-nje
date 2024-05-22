@@ -3,6 +3,7 @@
 #include <esp32-hal-log.h>
 #include <mbedtls/error.h>
 #include <SPIFFS.h>
+#include <service/imap/rfc2047.h>
 
 static char LOG_TAG[] = "IMAP_NFY";
 
@@ -77,7 +78,16 @@ void ImapNotifier::wait_lines() {
         ESP_LOGE(LOG_TAG, "For your record, it looked like: %s", rxbuf);
         rxbuf_ptr = 0;
     }
-    size_t read = mbedtls_ssl_read(&ssl, rxbuf + rxbuf_ptr, RXBUF_SIZE - rxbuf_ptr);
+    int read = mbedtls_ssl_read(&ssl, rxbuf + rxbuf_ptr, RXBUF_SIZE - rxbuf_ptr);
+    
+    if(read < 0) {
+        ESP_LOGE(LOG_TAG, "mbedtls_ssl_read returned -0x%x, will reconnect", -read);
+        tlserror = read;
+        free_socket();
+        state = DISCONNECT;
+        return;
+    }
+
     rxbuf_ptr += read;
     if(read > 0) {
         char * blk = (char*) rxbuf;
@@ -149,7 +159,13 @@ void ImapNotifier::download_one(imap_message_id_t id) {
 	char *epos;
 	int eslen;
 
+    ESP_LOGV(LOG_TAG, "buffer: %s", ptr);
+
     imap_message_info_t msg = { 0 };
+    char name[64] = { 0 };
+    char mail[64] = { 0 };
+    char name_decoded[64] = { 0 };
+    char subj_decoded[64] = { 0 };
 
 	// Parse From
 	if ((spos = strstr((char *)ptr, "\r\nFrom:")) != 0) {
@@ -158,13 +174,20 @@ void ImapNotifier::download_one(imap_message_id_t id) {
         char * email_start = strstr(spos, "<") + 1;
         char * email_end = strstr(email_start, ">");
         *email_end = 0;
+        strncpy(mail, email_start, 64);
+        *email_end = '>';
 
         char * name_start = spos;
         char * name_end = email_start - 2;
+        char bak = *name_end;
         *name_end = 0;
+        strncpy(name, name_start, 64);
+        *name_end = bak;
 
-        msg.sender_name = name_start;
-        msg.sender_mail = email_start;
+        rfc2047_decode(name_decoded, name, 64);
+
+        msg.sender_name = name_decoded;
+        msg.sender_mail = mail;
 		ESP_LOGI(LOG_TAG, "From: %s [%s]", msg.sender_name, msg.sender_mail);
 	}
 
@@ -174,7 +197,9 @@ void ImapNotifier::download_one(imap_message_id_t id) {
 		epos = strstr(spos, "\r\n");
         *epos = 0;
 
-		msg.subject = spos;
+        rfc2047_decode(subj_decoded, spos, 64);
+
+		msg.subject = subj_decoded;
 		ESP_LOGI(LOG_TAG, "Subj: [%s]", msg.subject);
 	}
 
@@ -476,7 +501,7 @@ void ImapNotifier::login() {
     state = AUTHING;
 }
 
-void ImapNotifier::deinit() {
+void ImapNotifier::free_socket() {
     if(tlserror != 0) {
         char buf[100];
         mbedtls_strerror(tlserror, buf, 100);
@@ -489,6 +514,11 @@ void ImapNotifier::deinit() {
     mbedtls_ssl_config_free(&conf);
     mbedtls_ctr_drbg_free(&ctr_drbg);
     mbedtls_entropy_free(&entropy);
+}
+
+void ImapNotifier::deinit() {
+    free_socket();
+
     if(hTask != NULL) {
         vTaskDelete(hTask);
     }
